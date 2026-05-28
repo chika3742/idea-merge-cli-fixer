@@ -1,5 +1,5 @@
 <idea-plugin>
-    <id>com.example.mergex</id>
+    <id>net.chikach.mergex</id>
     <name>IDEA Merge CLI Fixer</name>
     <vendor>chikach</vendor>
     <description><![CDATA[
