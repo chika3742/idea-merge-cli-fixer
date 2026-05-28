@@ -6,6 +6,7 @@ import com.intellij.diff.merge.MergeResult
 import com.intellij.openapi.application.ApplicationStarterBase
 import com.intellij.openapi.application.CliResult
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -107,10 +108,24 @@ internal class MergexStarter : ApplicationStarterBase(3, 4) {
             }
             return when (result.await()) {
                 MergeResult.CANCEL -> CliResult(1, null)
-                MergeResult.RESOLVED, MergeResult.LEFT, MergeResult.RIGHT -> CliResult.OK
+                MergeResult.RESOLVED, MergeResult.LEFT, MergeResult.RIGHT -> {
+                    // The merge dialog updates the document under a WriteAction but the disk
+                    // flush is queued; without an explicit save the process can exit before
+                    // FileDocumentManager flushes, losing the merged content.
+                    flushMergedFile(mergedVf)
+                    CliResult.OK
+                }
             }
         } finally {
             MergexSession.end()
+        }
+    }
+
+    private suspend fun flushMergedFile(vf: VirtualFile) {
+        withContext(Dispatchers.EDT) {
+            val fdm = FileDocumentManager.getInstance()
+            val doc = fdm.getCachedDocument(vf) ?: fdm.getDocument(vf)
+            if (doc != null) fdm.saveDocument(doc) else fdm.saveAllDocuments()
         }
     }
 
