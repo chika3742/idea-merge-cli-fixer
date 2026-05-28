@@ -56,8 +56,8 @@ Add the following to `~/.gitconfig` (or run the equivalent
 
 ```ini
 [merge]
-    tool = mergex
-[mergetool "mergex"]
+    tool = idea
+[mergetool "idea"]
     cmd = open -Wna "IntelliJ IDEA.app" --args mergex $LOCAL $REMOTE $BASE $MERGED
     trustExitCode = true
 [mergetool]
