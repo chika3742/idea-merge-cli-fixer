@@ -1,1 +1,1 @@
-rootProject.name = "idea-mergex-plugin"
+rootProject.name = "idea-merge-cli-fixer"

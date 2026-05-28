@@ -1,4 +1,4 @@
-package com.example.mergex
+package net.chikach.mergex
 
 import com.intellij.openapi.vfs.VirtualFile
 import java.nio.file.Path

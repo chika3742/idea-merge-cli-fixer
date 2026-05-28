@@ -1,10 +1,10 @@
-package com.example.mergex
+package net.chikach.mergex
 
 import com.intellij.diff.DiffManager
 import com.intellij.diff.DiffRequestFactory
 import com.intellij.diff.merge.MergeResult
+import com.intellij.ide.CliResult
 import com.intellij.openapi.application.ApplicationStarterBase
-import com.intellij.openapi.application.CliResult
 import com.intellij.openapi.application.EDT
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project

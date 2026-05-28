@@ -1,9 +1,9 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.0.21"
+    id("org.jetbrains.kotlin.jvm") version "2.2.20"
     id("org.jetbrains.intellij.platform") version "2.16.0"
 }
 
-group = "com.example"
+group = "net.chikach"
 version = "0.1.0"
 
 kotlin {

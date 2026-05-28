@@ -1,4 +1,4 @@
-package com.example.mergex
+package net.chikach.mergex
 
 import com.intellij.openapi.fileEditor.impl.NonProjectFileWritingAccessExtension
 import com.intellij.openapi.vfs.VirtualFile
