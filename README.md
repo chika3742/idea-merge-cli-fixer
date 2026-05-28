@@ -6,22 +6,18 @@ designed to be used as a `git mergetool`.
 ## Why
 
 As of IntelliJ IDEA **2026.1.2**, the bundled `idea merge` command has
-three issues that make it unsuitable as a `git mergetool` driver
+these issues that make it unsuitable as a `git mergetool` driver
 (JetBrains may address them in a future release &mdash; please verify
 against your current IDE version before relying on this plugin):
 
-1. **It does not wait.** `idea merge` returns control to the shell before
-   the merge dialog is closed, so `git mergetool` proceeds with an
-   unresolved file.
-2. **It nags about non-project files.** When the file being merged sits
+1. **It nags about non-project files.** When the file being merged sits
    outside any open project, the IDE displays a "you are editing a
    non-project file" confirmation dialog on every save.
-3. **EDT errors.** Threading bugs occasionally surface as event-dispatch
+2. **EDT errors.** Threading bugs occasionally surface as event-dispatch
    thread violations.
 
 `idea mergex` is a sibling command that:
 
-- Blocks until the merge dialog is closed.
 - Whitelists writes to the merged file while the merge is active (no
   non-project-file dialog).
 - Uses the modern coroutine-based application starter to stay on the
@@ -33,7 +29,8 @@ against your current IDE version before relying on this plugin):
 
 - IntelliJ IDEA **2026.1.2** or newer (build `261.*`).
 - JDK 21 (for building).
-- An `idea` (or `idea.sh` / `idea.bat`) launcher on `PATH`.
+- `IntelliJ IDEA.app` is placed in `/Applications` or `$HOME/Applications`.
+- Tested only on macOS 26.5.
 
 ## Build
 
@@ -61,7 +58,7 @@ Add the following to `~/.gitconfig` (or run the equivalent
 [merge]
     tool = mergex
 [mergetool "mergex"]
-    cmd = idea mergex $LOCAL $REMOTE $BASE $MERGED
+    cmd = open -Wna "IntelliJ IDEA.app" --args mergex $LOCAL $REMOTE $BASE $MERGED
     trustExitCode = true
 [mergetool]
     keepBackup = false
