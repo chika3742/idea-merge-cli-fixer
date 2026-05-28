@@ -42,7 +42,7 @@ internal class MergexStarter : ApplicationStarterBase(3, 4) {
         return positional == 3 || positional == 4
     }
 
-    override suspend fun executeCommand(args: List<String>, currentDirectory: String): CliResult {
+    override suspend fun executeCommand(args: List<String>, currentDirectory: String?): CliResult {
         return try {
             runMerge(positionalArgs(args), currentDirectory)
         } catch (t: Throwable) {
@@ -51,8 +51,8 @@ internal class MergexStarter : ApplicationStarterBase(3, 4) {
         }
     }
 
-    private suspend fun runMerge(positional: List<String>, currentDirectory: String): CliResult {
-        val cwd: Path = Paths.get(currentDirectory)
+    private suspend fun runMerge(positional: List<String>, currentDirectory: String?): CliResult {
+        val cwd: Path = currentDirectory?.let(Paths::get) ?: Paths.get("").toAbsolutePath()
 
         val localPath: Path
         val remotePath: Path
