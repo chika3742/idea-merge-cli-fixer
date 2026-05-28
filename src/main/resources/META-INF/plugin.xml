@@ -16,7 +16,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <appStarter implementation="com.example.mergex.MergexStarter"/>
+        <appStarter id="mergex" implementation="com.example.mergex.MergexStarter"/>
         <nonProjectFileWritingAccessExtension
             implementation="com.example.mergex.MergexFileAccessProvider"/>
     </extensions>
