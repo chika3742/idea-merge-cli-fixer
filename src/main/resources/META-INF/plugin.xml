@@ -1,0 +1,23 @@
+<idea-plugin>
+    <id>com.example.mergex</id>
+    <name>IDEA Merge CLI Fixer</name>
+    <vendor>chikach</vendor>
+    <description><![CDATA[
+        Adds the <code>idea mergex</code> CLI command &mdash; a blocking, git-mergetool-friendly variant of <code>idea merge</code>.
+        <ul>
+            <li>Waits until the merge dialog is closed before returning (suitable for use with <code>git mergetool</code>).</li>
+            <li>Suppresses the non-project-file confirmation dialog for files involved in an active merge session.</li>
+            <li>Returns standard exit codes: 0 = resolved, 1 = cancelled, 2 = invalid arguments or fatal error.</li>
+        </ul>
+        Coexists with the bundled <code>idea merge</code> command without replacing it.
+    ]]></description>
+
+    <idea-version since-build="261"/>
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <appStarter id="mergex" implementation="net.chikach.mergex.MergexStarter"/>
+        <nonProjectFileWritingAccessExtension
+            implementation="net.chikach.mergex.MergexFileAccessProvider"/>
+    </extensions>
+</idea-plugin>
