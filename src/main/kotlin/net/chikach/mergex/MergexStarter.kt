@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 package net.chikach.mergex
 
 import com.intellij.diff.DiffManager
@@ -11,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.platform.eel.fs.EelFiles
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -139,7 +142,7 @@ internal class MergexStarter : ApplicationStarterBase(3, 4) {
 
     private fun readBytes(path: Path): ByteArray =
         try {
-            Files.readAllBytes(path)
+            EelFiles.readAllBytes(path)
         } catch (e: NoSuchFileException) {
             throw IllegalStateException("File disappeared while reading: $path", e)
         }
