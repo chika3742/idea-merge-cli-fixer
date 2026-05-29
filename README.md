@@ -114,10 +114,16 @@ idea mergex /tmp/L /tmp/R /tmp/M
 
 ## How it works
 
-- `MergexStarter` extends `ApplicationStarterBase(3, 4)` and is
-  registered under the extension point `com.intellij.appStarter` with
+- `MergexStarter` implements the public `ApplicationStarter` interface
+  directly (the convenience base class `ApplicationStarterBase` is
+  internal to the IntelliJ Platform and is not available to plugins). It
+  is registered under the extension point `com.intellij.appStarter` with
   the command name `mergex`. The IDE's CLI dispatcher routes
-  `idea mergex &hellip;` to its `suspend fun executeCommand(&hellip;)`.
+  `idea mergex &hellip;` either to `suspend fun processExternalCommandLine(&hellip;)`
+  (when a running instance handles the command) or to `main(&hellip;)`
+  (when a fresh instance is launched). A small application-level service,
+  `MergexCoroutineScopeService`, supplies the coroutine scope used by the
+  `main` path.
 - The starter reads the file contents, locates the merged file in the
   VFS, opens a `MergeRequest` via `DiffRequestFactory.createMergeRequest`,
   and shows it with `DiffManager.showMerge` on the EDT. It then awaits

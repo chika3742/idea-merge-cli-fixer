@@ -6,8 +6,9 @@ import com.intellij.diff.DiffManager
 import com.intellij.diff.DiffRequestFactory
 import com.intellij.diff.merge.MergeResult
 import com.intellij.ide.CliResult
-import com.intellij.openapi.application.ApplicationStarterBase
+import com.intellij.openapi.application.ApplicationStarter
 import com.intellij.openapi.application.EDT
+import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -16,11 +17,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.eel.fs.EelFiles
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.system.exitProcess
 
 /**
  * `idea mergex` &mdash; a blocking, git-mergetool-friendly variant of the
@@ -33,20 +36,68 @@ import java.nio.file.Paths
  * ```
  *
  * Exit codes: `0` resolved, `1` cancelled, `2` invalid arguments / fatal error.
+ *
+ * Implements the public [ApplicationStarter] interface directly. The former
+ * base class `ApplicationStarterBase` is marked internal to the IntelliJ
+ * Platform and must not be used from plugins, so the small amount of glue it
+ * provided (argument checking, the external-command-line path, and the
+ * direct-launch path) is replicated here.
  */
-internal class MergexStarter : ApplicationStarterBase(3, 4) {
+internal class MergexStarter : ApplicationStarter {
 
-    override val commandName: String = "mergex"
+    private val commandName: String = "mergex"
 
-    override val usageMessage: String =
+    private val usageMessage: String =
         "Usage: idea mergex <LOCAL> <REMOTE> [<BASE>] <MERGED>"
 
-    override fun checkArguments(args: List<String>): Boolean {
+    /** The command logic runs on a background thread; UI work is dispatched to the EDT explicitly. */
+    override val requiredModality: Int = ApplicationStarter.NOT_IN_EDT
+
+    /** The merge dialog requires a UI, so this starter cannot run headless. */
+    override val isHeadless: Boolean = false
+
+    override fun canProcessExternalCommandLine(): Boolean = true
+
+    private fun checkArguments(args: List<String>): Boolean {
         val positional = positionalArgs(args).size
         return positional == 3 || positional == 4
     }
 
-    override suspend fun executeCommand(args: List<String>, currentDirectory: String?): CliResult {
+    /**
+     * Direct-launch path: invoked on the EDT when no running instance handled
+     * the command. We must not block the EDT (the merge dialog needs it), so we
+     * launch the work on the application coroutine scope and terminate the JVM
+     * ourselves once it completes.
+     */
+    override fun main(args: List<String>) {
+        if (!checkArguments(args)) {
+            System.err.println(usageMessage)
+            exitProcess(2)
+        }
+        service<MergexCoroutineScopeService>().scope.launch {
+            val exitCode = try {
+                executeCommand(args, currentDirectory = null).also { it.message?.let(::println) }.exitCode
+            } catch (t: Throwable) {
+                t.printStackTrace(System.err)
+                2
+            }
+            exitProcess(exitCode)
+        }
+    }
+
+    /**
+     * External-command-line path: invoked (off the EDT) on the already-running
+     * instance when `git mergetool` launches the IDE a second time.
+     */
+    override suspend fun processExternalCommandLine(args: List<String>, currentDirectory: String?): CliResult {
+        if (!checkArguments(args)) {
+            System.err.println(usageMessage)
+            return CliResult(2, usageMessage)
+        }
+        return executeCommand(args, currentDirectory)
+    }
+
+    private suspend fun executeCommand(args: List<String>, currentDirectory: String?): CliResult {
         return try {
             runMerge(positionalArgs(args), currentDirectory)
         } catch (t: Throwable) {
