@@ -128,50 +128,16 @@ idea mergex /tmp/L /tmp/R /tmp/M
 
 ## How it works
 
-The plugin is small &mdash; three Kotlin files and two extension-point
-registrations. Each piece has a single job:
-
-### The CLI command (`MergexStarter`)
-
-`MergexStarter` implements the public `ApplicationStarter` interface and
-is registered under `com.intellij.appStarter` as `mergex`. (The
-convenience base class `ApplicationStarterBase` is internal to the
-IntelliJ Platform and unavailable to plugins, so the starter implements
-the interface directly.)
-
-The IDE's CLI dispatcher routes `idea mergex &hellip;` to one of two entry
-points:
-
-- `processExternalCommandLine(&hellip;)` &mdash; when a running IDE instance
-  picks up the command, and
-- `main(&hellip;)` &mdash; when a fresh instance is launched. This path uses
-  the coroutine scope supplied by the `MergexCoroutineScopeService`
-  application service.
-
-Before dispatching, the starter strips the command name and any option
-flags (anything starting with `-`, such as the `--wait` forwarded by the
-JetBrains Toolbox launcher) and validates that 3 or 4 positional file
-arguments remain. Because the command is usually launched detached from
-the calling terminal, errors and the usage message are shown in modal
-dialogs rather than printed to stderr.
-
-### The merge dialog
-
-The starter reads the file contents, locates the merged file in the VFS,
-builds a `MergeRequest` with `DiffRequestFactory.createMergeRequest`, and
-shows it via `DiffManager.showMerge` on the EDT. It then awaits the
-`MergeResult` callback through a `CompletableDeferred`, so the process
-blocks until the dialog closes, and maps the result to the documented
-exit code.
-
-### Suppressing the non-project-file dialog
-
-While a merge is active, `MergexSession` records the participating file
-paths. `MergexFileAccessProvider`, registered against
-`com.intellij.nonProjectFileWritingAccessExtension`, returns `true` from
-`isWritable` for exactly those paths, which suppresses the
-non-project-file confirmation dialog. Outside an active merge it is a
-no-op.
+- `MergexStarter` implements the `ApplicationStarter` interface,
+  registered under `com.intellij.appStarter` as `mergex`. It strips
+  option flags (e.g. `--wait`), validates the 3&ndash;4 positional file
+  arguments, and reports errors via modal dialogs.
+- It reads the files, opens a `MergeRequest` with `DiffManager.showMerge`
+  on the EDT, and awaits the `MergeResult` through a `CompletableDeferred`
+  so the process blocks until the dialog closes.
+- While a merge is active, `MergexSession` records the participating
+  paths and `MergexFileAccessProvider` whitelists writes to them,
+  suppressing the non-project-file confirmation dialog.
 
 ## License
 
