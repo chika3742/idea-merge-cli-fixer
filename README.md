@@ -49,7 +49,9 @@ In IntelliJ IDEA:
 3. Select the zip in `build/distributions/`.
 4. Restart the IDE.
 
-## Configure `git mergetool`
+## Configure VCS
+
+### Git
 
 Add the following to `~/.gitconfig` (or run the equivalent
 `git config --global` commands):
@@ -70,13 +72,11 @@ finishes:
 
 ```ini
 [mergetool "idea"]
-    cmd = idea --wait mergex $LOCAL $REMOTE $BASE $MERGED
+    cmd = idea mergex --wait $LOCAL $REMOTE $BASE $MERGED
     trustExitCode = true
 ```
 
-`mergex` ignores option flags such as `--wait` (anything beginning with
-`-`) when counting its `LOCAL`/`REMOTE`/`BASE`/`MERGED` operands, so the
-flag forwarded by the launcher script does not interfere.
+Note that `--wait` option must be placed after `mergex`.
 
 After this, `git mergetool` will block on the IDE's merge dialog and
 honour its exit code:
@@ -86,6 +86,24 @@ honour its exit code:
 | 0         | Merge resolved (Apply, or take Left/Right). |
 | 1         | Cancelled.                                  |
 | 2         | Invalid arguments or fatal error.           |
+
+### Jujutsu
+
+Add the following to `~/.config/jj/config.toml`.
+
+```toml
+[ui]
+merge-editor = "idea"
+
+[merge-tools.idea]
+# If JetBrains Toolbox generates the startup script
+program = "idea"
+merge-args = ["mergex", "--wait", "$left", "$right", "$base", "$output"]
+
+# otherwise
+# program = "open"
+# merge-args = ["-Wna", "IntelliJ IDEA.app", "--args", "mergex", "$left", "$right", "$base", "$output"]
+```
 
 ## Verifying the install
 
