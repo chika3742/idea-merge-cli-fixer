@@ -4,7 +4,10 @@ plugins {
 }
 
 group = "net.chikach"
-version = "0.1.0"
+// The version is taken from the Git tag name (the leading "v" is stripped),
+// passed in as the `pluginVersion` Gradle property by the release workflow.
+// Falls back to a default for local builds.
+version = providers.gradleProperty("pluginVersion").getOrElse("0.1.0")
 
 kotlin {
     jvmToolchain(21)
