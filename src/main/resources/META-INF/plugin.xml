@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>net.chikach.mergex</id>
-    <name>IDEA Merge CLI Fixer</name>
+    <name>Merge CLI Fixer</name>
     <vendor>chikach</vendor>
     <description><![CDATA[
         Adds the <code>idea mergex</code> CLI command &mdash; a blocking, git-mergetool-friendly variant of <code>idea merge</code>.
