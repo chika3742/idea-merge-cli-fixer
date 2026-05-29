@@ -228,8 +228,16 @@ internal class MergexStarter : ApplicationStarter {
         showDialog("mergex failed: ${t.message ?: t.javaClass.simpleName}", Messages.getErrorIcon())
 
     private suspend fun showDialog(message: String, icon: Icon) {
+        // Messages renders the text as HTML, so angle-bracketed placeholders such
+        // as <LOCAL> would otherwise be swallowed as unknown tags (and newlines
+        // ignored). Escape the text and turn line breaks into <br> explicitly.
+        val html = "<html>" + message
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\n", "<br>") + "</html>"
         withContext(Dispatchers.EDT) {
-            Messages.showMessageDialog(message, "idea mergex", icon)
+            Messages.showMessageDialog(html, "idea mergex", icon)
         }
     }
 }
