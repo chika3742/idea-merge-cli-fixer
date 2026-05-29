@@ -44,3 +44,8 @@ intellijPlatform {
         token = providers.environmentVariable("PUBLISH_TOKEN")
     }
 }
+
+tasks.named("verifyPluginSignature") {
+    dependsOn(tasks.named("signPlugin"))
+}
+
