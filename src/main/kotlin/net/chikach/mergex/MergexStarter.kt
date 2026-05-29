@@ -1,13 +1,12 @@
-@file:Suppress("UnstableApiUsage")
-
 package net.chikach.mergex
 
 import com.intellij.diff.DiffManager
 import com.intellij.diff.DiffRequestFactory
 import com.intellij.diff.merge.MergeResult
 import com.intellij.ide.CliResult
-import com.intellij.openapi.application.ApplicationStarterBase
+import com.intellij.openapi.application.ApplicationStarter
 import com.intellij.openapi.application.EDT
+import kotlin.system.exitProcess
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -34,25 +33,27 @@ import java.nio.file.Paths
  *
  * Exit codes: `0` resolved, `1` cancelled, `2` invalid arguments / fatal error.
  */
-internal class MergexStarter : ApplicationStarterBase(3, 4) {
+internal class MergexStarter : ApplicationStarter {
 
     override val commandName: String = "mergex"
 
-    override val usageMessage: String =
+    private val usageMessage: String =
         "Usage: idea mergex <LOCAL> <REMOTE> [<BASE>] <MERGED>"
 
-    override fun checkArguments(args: List<String>): Boolean {
-        val positional = positionalArgs(args).size
-        return positional == 3 || positional == 4
-    }
-
-    override suspend fun executeCommand(args: List<String>, currentDirectory: String?): CliResult {
-        return try {
-            runMerge(positionalArgs(args), currentDirectory)
+    override suspend fun start(args: List<String>) {
+        val positional = positionalArgs(args)
+        if (positional.size != 3 && positional.size != 4) {
+            System.err.println("mergex: expected 3 or 4 positional arguments, got ${positional.size}")
+            System.err.println(usageMessage)
+            exitProcess(2)
+        }
+        val result = try {
+            runMerge(positional, System.getProperty("user.dir"))
         } catch (t: Throwable) {
             t.printStackTrace(System.err)
             CliResult(1, t.message ?: t.javaClass.simpleName)
         }
+        exitProcess(result.exitCode)
     }
 
     private suspend fun runMerge(positional: List<String>, currentDirectory: String?): CliResult {
