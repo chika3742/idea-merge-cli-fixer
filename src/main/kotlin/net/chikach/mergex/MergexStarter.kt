@@ -1,5 +1,3 @@
-@file:Suppress("UnstableApiUsage")
-
 package net.chikach.mergex
 
 import com.intellij.diff.DiffManager
@@ -193,6 +191,7 @@ internal class MergexStarter : ApplicationStarter {
 
     private fun readBytes(path: Path): ByteArray =
         try {
+            @Suppress("UnstableApiUsage")
             EelFiles.readAllBytes(path)
         } catch (e: NoSuchFileException) {
             throw IllegalStateException("File disappeared while reading: $path", e)
