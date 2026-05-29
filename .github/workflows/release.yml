@@ -32,10 +32,20 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Place secrets
+        env:
+          CERTIFICATE_CHAIN_BASE64: ${{ secrets.CERTIFICATE_CHAIN_BASE64 }}
+          PRIVATE_KEY_BASE64: ${{ secrets.PRIVATE_KEY_BASE64 }}
+        run: |
+          base64 -d <<< "$CERTIFICATE_CHAIN_BASE64" > "./chain.crt"
+          base64 -d <<< "$PRIVATE_KEY_BASE64" > "./private.pem"
+
       - name: Sign and publish plugin
         env:
-          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
           PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
         run: ./gradlew verifyPluginSignature publishPlugin -PpluginVersion="${GITHUB_REF_NAME#v}"
+
+      - name: Clear secrets
+        if: always()
+        run: rm -f "./chain.crt" "./private.pem"

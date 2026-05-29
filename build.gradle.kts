@@ -35,8 +35,19 @@ intellijPlatform {
     }
 
     signing {
-        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
-        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        val chainFile = layout.projectDirectory.file("./chain.crt")
+        if (chainFile.asFile.exists()) {
+            certificateChainFile.set(chainFile)
+        } else {
+            certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        }
+        val pemFile = layout.projectDirectory.file("./private.pem")
+        if (pemFile.asFile.exists()) {
+            privateKeyFile.set(pemFile)
+        } else {
+            privateKey = providers.environmentVariable("PRIVATE_KEY")
+        }
+
         password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
     }
 
