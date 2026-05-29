@@ -6,15 +6,16 @@ import com.intellij.diff.merge.MergeResult
 import com.intellij.ide.CliResult
 import com.intellij.openapi.application.ApplicationStarter
 import com.intellij.openapi.application.EDT
-import kotlin.system.exitProcess
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.eel.fs.EelFiles
+import kotlin.system.exitProcess
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -35,23 +36,31 @@ import java.nio.file.Paths
  */
 internal class MergexStarter : ApplicationStarter {
 
-    override val commandName: String = "mergex"
+    // commandName is no longer part of ApplicationStarter; the command name is set by
+    // id="mergex" in the appStarter extension point in plugin.xml.
+    private val commandName: String = "mergex"
 
     private val usageMessage: String =
         "Usage: idea mergex <LOCAL> <REMOTE> [<BASE>] <MERGED>"
 
-    override suspend fun start(args: List<String>) {
+    // Run on a background thread so withContext(Dispatchers.EDT) inside doesn't deadlock.
+    override val requiredModality: Int
+        get() = ApplicationStarter.NOT_IN_EDT
+
+    override fun main(args: List<String>) {
         val positional = positionalArgs(args)
         if (positional.size != 3 && positional.size != 4) {
             System.err.println("mergex: expected 3 or 4 positional arguments, got ${positional.size}")
             System.err.println(usageMessage)
             exitProcess(2)
         }
-        val result = try {
-            runMerge(positional, System.getProperty("user.dir"))
-        } catch (t: Throwable) {
-            t.printStackTrace(System.err)
-            CliResult(1, t.message ?: t.javaClass.simpleName)
+        val result = runBlocking {
+            try {
+                runMerge(positional, System.getProperty("user.dir"))
+            } catch (t: Throwable) {
+                t.printStackTrace(System.err)
+                CliResult(1, t.message ?: t.javaClass.simpleName)
+            }
         }
         exitProcess(result.exitCode)
     }
