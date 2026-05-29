@@ -128,27 +128,50 @@ idea mergex /tmp/L /tmp/R /tmp/M
 
 ## How it works
 
-- `MergexStarter` implements the public `ApplicationStarter` interface
-  directly (the convenience base class `ApplicationStarterBase` is
-  internal to the IntelliJ Platform and is not available to plugins). It
-  is registered under the extension point `com.intellij.appStarter` with
-  the command name `mergex`. The IDE's CLI dispatcher routes
-  `idea mergex &hellip;` either to `suspend fun processExternalCommandLine(&hellip;)`
-  (when a running instance handles the command) or to `main(&hellip;)`
-  (when a fresh instance is launched). A small application-level service,
-  `MergexCoroutineScopeService`, supplies the coroutine scope used by the
-  `main` path.
-- The starter reads the file contents, locates the merged file in the
-  VFS, opens a `MergeRequest` via `DiffRequestFactory.createMergeRequest`,
-  and shows it with `DiffManager.showMerge` on the EDT. It then awaits
-  the `MergeResult` callback through a `CompletableDeferred`, so the
-  process blocks until the dialog closes.
-- While the merge is active, `MergexSession` records the participating
-  file paths. `MergexFileAccessProvider`, registered against
-  `com.intellij.nonProjectFileWritingAccessExtension`, returns `true`
-  from `isWritable` for those paths, which suppresses the non-project
-  file confirmation dialog. Outside an active merge the extension is a
-  no-op.
+The plugin is small &mdash; three Kotlin files and two extension-point
+registrations. Each piece has a single job:
+
+### The CLI command (`MergexStarter`)
+
+`MergexStarter` implements the public `ApplicationStarter` interface and
+is registered under `com.intellij.appStarter` as `mergex`. (The
+convenience base class `ApplicationStarterBase` is internal to the
+IntelliJ Platform and unavailable to plugins, so the starter implements
+the interface directly.)
+
+The IDE's CLI dispatcher routes `idea mergex &hellip;` to one of two entry
+points:
+
+- `processExternalCommandLine(&hellip;)` &mdash; when a running IDE instance
+  picks up the command, and
+- `main(&hellip;)` &mdash; when a fresh instance is launched. This path uses
+  the coroutine scope supplied by the `MergexCoroutineScopeService`
+  application service.
+
+Before dispatching, the starter strips the command name and any option
+flags (anything starting with `-`, such as the `--wait` forwarded by the
+JetBrains Toolbox launcher) and validates that 3 or 4 positional file
+arguments remain. Because the command is usually launched detached from
+the calling terminal, errors and the usage message are shown in modal
+dialogs rather than printed to stderr.
+
+### The merge dialog
+
+The starter reads the file contents, locates the merged file in the VFS,
+builds a `MergeRequest` with `DiffRequestFactory.createMergeRequest`, and
+shows it via `DiffManager.showMerge` on the EDT. It then awaits the
+`MergeResult` callback through a `CompletableDeferred`, so the process
+blocks until the dialog closes, and maps the result to the documented
+exit code.
+
+### Suppressing the non-project-file dialog
+
+While a merge is active, `MergexSession` records the participating file
+paths. `MergexFileAccessProvider`, registered against
+`com.intellij.nonProjectFileWritingAccessExtension`, returns `true` from
+`isWritable` for exactly those paths, which suppresses the
+non-project-file confirmation dialog. Outside an active merge it is a
+no-op.
 
 ## License
 
