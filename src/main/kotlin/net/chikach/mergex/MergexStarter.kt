@@ -10,9 +10,11 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.eel.fs.EelFiles
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,6 +23,7 @@ import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
+import javax.swing.Icon
 import kotlin.system.exitProcess
 
 /**
@@ -40,6 +43,12 @@ import kotlin.system.exitProcess
  * Platform and must not be used from plugins, so the small amount of glue it
  * provided (argument checking, the external-command-line path, and the
  * direct-launch path) is replicated here.
+ *
+ * The command is typically launched via `open -Wna "IntelliJ IDEA.app" --args
+ * mergex …`, so its stdout/stderr are not attached to the terminal that ran
+ * `git mergetool`. Errors and the usage message are therefore surfaced to the
+ * user through modal dialogs (mirroring `ApplicationStarterBase`), with stderr
+ * kept only for the IDE log.
  */
 internal class MergexStarter : ApplicationStarter {
 
@@ -68,16 +77,12 @@ internal class MergexStarter : ApplicationStarter {
      * ourselves once it completes.
      */
     override fun main(args: List<String>) {
-        if (!checkArguments(args)) {
-            System.err.println(usageMessage)
-            exitProcess(2)
-        }
         service<MergexCoroutineScopeService>().scope.launch {
-            val exitCode = try {
-                executeCommand(args, currentDirectory = null).also { it.message?.let(::println) }.exitCode
-            } catch (t: Throwable) {
-                t.printStackTrace(System.err)
+            val exitCode = if (!checkArguments(args)) {
+                showUsageDialog()
                 2
+            } else {
+                executeCommand(args, currentDirectory = null).exitCode
             }
             exitProcess(exitCode)
         }
@@ -89,7 +94,7 @@ internal class MergexStarter : ApplicationStarter {
      */
     override suspend fun processExternalCommandLine(args: List<String>, currentDirectory: String?): CliResult {
         if (!checkArguments(args)) {
-            System.err.println(usageMessage)
+            showUsageDialog()
             return CliResult(2, usageMessage)
         }
         return executeCommand(args, currentDirectory)
@@ -98,8 +103,11 @@ internal class MergexStarter : ApplicationStarter {
     private suspend fun executeCommand(args: List<String>, currentDirectory: String?): CliResult {
         return try {
             runMerge(positionalArgs(args), currentDirectory)
+        } catch (e: CancellationException) {
+            throw e
         } catch (t: Throwable) {
             t.printStackTrace(System.err)
+            showErrorDialog(t)
             CliResult(1, t.message ?: t.javaClass.simpleName)
         }
     }
@@ -207,9 +215,21 @@ internal class MergexStarter : ApplicationStarter {
         }
     }
 
-    private fun invalidArgs(message: String): CliResult {
+    private suspend fun invalidArgs(message: String): CliResult {
         System.err.println("mergex: $message")
-        System.err.println(usageMessage)
+        showDialog("$message\n\n$usageMessage", Messages.getWarningIcon())
         return CliResult(2, message)
+    }
+
+    private suspend fun showUsageDialog() =
+        showDialog(usageMessage, Messages.getInformationIcon())
+
+    private suspend fun showErrorDialog(t: Throwable) =
+        showDialog("mergex failed: ${t.message ?: t.javaClass.simpleName}", Messages.getErrorIcon())
+
+    private suspend fun showDialog(message: String, icon: Icon) {
+        withContext(Dispatchers.EDT) {
+            Messages.showMessageDialog(message, "idea mergex", icon)
+        }
     }
 }
