@@ -27,13 +27,13 @@ against your current IDE version before relying on this plugin):
 
 ## Requirements
 
-- IntelliJ IDEA **2026.1.2** or newer (build `261.*`).
+- IntelliJ IDEA **2026.1.2** or newer (build `261.*` or later).
 - JDK 21 (for building).
 - Tested only on macOS 26.5.
 
 ## Basic install
 
-Go to **Setting︎︎s -> Plugins** and search for "merge cli fixer" in Marketplace tab then install.
+Go to **Setting︎︎s → Plugins** and search for "merge cli fixer" in Marketplace tab then install.
 
 ## Build
 
