@@ -1,15 +1,18 @@
+import org.jetbrains.changelog.date
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.20"
     id("org.jetbrains.intellij.platform") version "2.16.0"
+    id("org.jetbrains.changelog") version "2.5.0"
 }
 
 group = "net.chikach"
 // The version is taken from the Git tag name (the leading "v" is stripped),
 // passed in as the `pluginVersion` Gradle property by the release workflow.
 // Falls back to a default for local builds.
-version = providers.gradleProperty("pluginVersion").getOrElse("0.1.0")
+val projectVersion = providers.gradleProperty("pluginVersion").getOrElse("0.1.0")
+version = projectVersion
 
 kotlin {
     jvmToolchain(21)
@@ -69,3 +72,19 @@ tasks.named("verifyPluginSignature") {
     dependsOn(tasks.named("signPlugin"))
 }
 
+tasks {
+    patchPluginXml {
+        changeNotes = changelog.renderItem(
+            changelog.getUnreleased()
+                .withHeader(false)
+                .withEmptySections(false)
+        )
+    }
+}
+
+changelog {
+    version = projectVersion
+    path = file("CHANGELOG.md").canonicalPath
+    header = provider { "${version.get()} - ${date()}" }
+    headerParserRegex = """(\d+\.\d+\.\d+)""".toRegex()
+}
