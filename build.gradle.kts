@@ -1,4 +1,5 @@
 import org.jetbrains.changelog.date
+import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 
 plugins {
@@ -33,6 +34,10 @@ dependencies {
 
 intellijPlatform {
     pluginConfiguration {
+        description = providers.fileContents(
+            layout.projectDirectory.file("PLUGIN_DESCRIPTION.md")
+        ).asText.map(::markdownToHTML)
+
         ideaVersion {
             sinceBuild = "261"
             untilBuild = "262.*"

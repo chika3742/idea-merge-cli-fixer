@@ -22,8 +22,6 @@ against your current IDE version before relying on this plugin):
   non-project-file dialog).
 - Uses the modern coroutine-based application starter to stay on the
   correct thread.
-- Coexists with the bundled `idea merge` &mdash; it is added, not
-  replaced.
 
 ## Requirements
 
